@@ -7,7 +7,7 @@ from ijson import common
 from ijson.compat import bytetype
 
 
-BUFSIZE = 128
+BUFSIZE = 64
 LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
 
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
