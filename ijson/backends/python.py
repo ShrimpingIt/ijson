@@ -7,6 +7,7 @@ from ijson import common
 from ijson.compat import bytetype
 
 
+# TODO CH bring down BUFSIZE default to reduce headroom of JSON API parsing 
 BUFSIZE = 16 * 1024
 LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
 
