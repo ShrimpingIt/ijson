@@ -1,8 +1,6 @@
 '''
 Backend independent higher level interfaces, common exceptions.
 '''
-import decimal
-
 
 class JSONError(Exception):
     '''
@@ -152,10 +150,9 @@ def items(prefixed_events, prefix):
 
 def number(str_value):
     '''
-    Converts string with a numeric value into an int or a Decimal.
-    Used in different backends for consistent number representation.
+    Converts string with a numeric value into an int or a float.
     '''
-    number = decimal.Decimal(str_value)
     if not ('.' in str_value or 'e' in str_value or 'E' in str_value):
-        number = int(number)
-    return number
+        return int(str_value)
+    else:
+        return float(str_value)
