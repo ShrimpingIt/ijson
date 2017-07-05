@@ -7,8 +7,7 @@ from ijson import common
 from ijson.compat import bytetype
 
 
-# TODO CH bring down BUFSIZE default to reduce headroom of JSON API parsing 
-BUFSIZE = 16 * 1024
+BUFSIZE = 128
 LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
 
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
@@ -32,7 +31,7 @@ def Lexer(f, buf_size=BUFSIZE):
     while True:
         match = LEXEME_RE.search(buf, pos)
         if match:
-            lexeme = match.group()
+            lexeme = match.group(0)
             if lexeme == '"':
                 pos = match.start()
                 start = pos + 1
@@ -60,7 +59,7 @@ def Lexer(f, buf_size=BUFSIZE):
                         break
                     buf += data
                     match = LEXEME_RE.search(buf, pos)
-                    lexeme = match.group()
+                    lexeme = match.group(0)
                 yield discarded + match.start(), lexeme
                 pos = match.end()
         else:
