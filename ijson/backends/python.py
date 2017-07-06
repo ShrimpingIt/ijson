@@ -9,7 +9,11 @@ from ijson.compat import bytetype
 
 BUFSIZE = 64
 LEXEME_RE = re.compile('[a-z0-9eE\\.\\+-]+|[^ \t\r\n\f]')
-STRINGCHUNK = re.compile('(.*?)(")') # modified from cpython json.decoder https://github.com/python/cpython/search?utf8=%E2%9C%93&q=STRINGCHUNK&type=
+
+# original source from cpython json.decoder https://github.com/python/cpython/search?utf8=%E2%9C%93&q=STRINGCHUNK&type=
+#FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
+#STRINGCHUNK = re.compile(r'(.*?)(["\\\x00-\x1f])', FLAGS) 
+STRINGCHUNK = re.compile('(.*?)(")') 
 
 BACKSLASH = {
     '"': '"', '\\': '\\', '/': '/',
