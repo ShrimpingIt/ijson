@@ -2,16 +2,15 @@
 Pure-python parsing backend.
 '''
 import re
+#import ure as re
 
 from ijson import common
 from ijson.compat import bytetype
 
-
 BUFSIZE = 64
-LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
+LEXEME_RE = re.compile('[a-z0-9eE\\.\\+-]+|[^ \t\r\n\f]')
+STRINGCHUNK = re.compile('(.*?)(["\\\\\\x00-\\x1f])')
 
-FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
-STRINGCHUNK = re.compile(r'(.*?)(["\\\x00-\x1f])', FLAGS)
 BACKSLASH = {
     '"': '"', '\\': '\\', '/': '/',
     'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t',
@@ -23,9 +22,19 @@ class UnexpectedSymbol(common.JSONError):
             'Unexpected symbol %r at %d' % (symbol, pos)
         )
 
+# CH functions to intervene and fix RegEx issues (urehas no multiline and ure#Match no .start() or .end())
+
+def get_start(match, buf, pos):
+    return buf.find(match.group(0), pos)
+
+def get_end(match, buf, pos):
+    return get_start(match, buf, pos) + len(match.group(0))
+
+def get_buf(filelike, length):
+    return filelike.read(length)
 
 def Lexer(f, buf_size=BUFSIZE):
-    buf = f.read(buf_size)
+    buf = get_buf(f, buf_size)
     pos = 0
     discarded = 0
     while True:
@@ -33,7 +42,7 @@ def Lexer(f, buf_size=BUFSIZE):
         if match:
             lexeme = match.group(0)
             if lexeme == '"':
-                pos = match.start()
+                pos = get_start(match, buf, pos)
                 start = pos + 1
                 while True:
                     try:
@@ -46,24 +55,27 @@ def Lexer(f, buf_size=BUFSIZE):
                         else:
                             break
                     except ValueError:
-                        data = f.read(buf_size)
+                        data = get_buf(f, buf_size)
                         if not data:
                             raise common.IncompleteJSONError('Incomplete string lexeme')
                         buf += data
                 yield discarded + pos, buf[pos:end + 1]
                 pos = end + 1
             else:
-                while match.end() == len(buf):
-                    data = f.read(buf_size)
+                while get_end(match, buf, pos) == len(buf):
+                    data = get_buf(f, buf_size)
                     if not data:
                         break
                     buf += data
                     match = LEXEME_RE.search(buf, pos)
                     lexeme = match.group(0)
-                yield discarded + match.start(), lexeme
-                pos = match.end()
+                yield discarded + get_start(match,buf,pos), lexeme
+                pos = get_end(match,buf,pos)
+                # CH two lines added below following https://github.com/isagalaev/ijson/issues/60
+                buf = buf[pos:]
+                pos = 0
         else:
-            data = f.read(buf_size)
+            data = get_buf(f, buf_size)
             if not data:
                 break
             discarded += len(buf)
