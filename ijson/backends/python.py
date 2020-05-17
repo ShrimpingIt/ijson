@@ -8,12 +8,12 @@ from ijson import common
 from ijson.compat import bytetype
 
 BUFSIZE = 64
-LEXEME_RE = re.compile('[a-z0-9eE\\.\\+-]+|[^ \t\r\n\f]')
+LEXEME_RE = re.compile('(\+|-)?[0-9eE.]+|[^ \t\r\n\f]') # CH note, backslash line continuations are no longer supported
 
 # original source from cpython json.decoder https://github.com/python/cpython/search?utf8=%E2%9C%93&q=STRINGCHUNK&type=
 #FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
 #STRINGCHUNK = re.compile(r'(.*?)(["\\\x00-\x1f])', FLAGS) 
-STRINGCHUNK = re.compile('(.*?)(")') 
+STRINGCHUNK = re.compile('([^"]*)(")')
 
 BACKSLASH = {
     '"': '"', '\\': '\\', '/': '/',
@@ -35,7 +35,7 @@ def get_end(match, buf, pos):
     return get_start(match, buf, pos) + len(match.group(0))
 
 def get_buf(filelike, length):
-    return filelike.read(length)
+    return filelike.readline(length)
 
 def Lexer(f, buf_size=BUFSIZE):
     buf = get_buf(f, buf_size)
@@ -135,8 +135,8 @@ def scanstring(s, end, strict=True,
         chunk = _m(s, end)
         if chunk is None:
             raise JSONDecodeError("Unterminated string starting at", s, begin)
-        end = chunk.end()
-        content, terminator = chunk.groups()
+        end = get_end(chunk, s, end) # CH pos argument should be begin, not end?
+        content, terminator = [chunk.group(1), chunk.group(2)]
         # Content is contains zero or more unescaped string characters
         if content:
             _append(content)
